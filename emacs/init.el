@@ -65,7 +65,19 @@
   ;; `modus-themes-load-random-light').
   (modus-themes-load-theme 'ef-bio))
 
-;;; Gptel - defer until needed
+;;; Gptel
+
+;; make .authinfo.gpg file in home directory
+;; write machine gemini login apikey password YOUR_API_KEY in
+;; .authinfo.gpg file
+
+(defun my-get-api-key-secure ()
+  "Read an API key securely from auth-source."
+    (require 'auth-source)
+    (let ((info (car (auth-source-search :host "gemini"))))
+    (when info
+	(funcall (plist-get info :secret)))))
+
 (use-package gptel
   :straight t
   :defer t
@@ -73,8 +85,9 @@
   :init
   (setq gptel-model 'gemini-2.5-pro-exp-03-25
         gptel-backend (gptel-make-gemini "Gemini"
-                        :key "your-api-key"
-                        :stream t)))
+			:key (my-get-api-key-secure)
+			:stream t)))
+
 
 ;;; Markdown Mode - defer until opening .md files
 (use-package markdown-mode
@@ -83,10 +96,9 @@
   :mode (("\\.md\\'" . markdown-mode)
          ("\\.markdown\\'" . markdown-mode)))
 
-;;; Rotate window - defer
+;;; Smartep package
 (use-package smartrep
   :straight t
-  :defer t
   :config
   (setq smartrep-mode-line-active-bg nil))
 
