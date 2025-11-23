@@ -6,14 +6,27 @@
 (setq display-line-numbers-type 'relative)
 (add-to-list 'default-frame-alist '(font . "jetbrainsmono nerd font-25"))
 
-;; Startup time measurement
-(defun efs/display-startup-time ()
-  (message "Emacs loaded in %s with %d garbage collections."
-	   (format "%.2f seconds"
-		   (float-time
-		    (time-subtract after-init-time before-init-time)))
-	   gcs-done))
-(add-hook 'emacs-startup-hook #'efs/display-startup-time)
+
+;; Enable desktop save mode for session persistence
+(desktop-save-mode 1)
+
+;; Directory where desktop files are saved
+(setq desktop-dirname "~/.emacs.d/desktop/")
+(setq desktop-path (list desktop-dirname))
+
+;; Create directory if it doesn't exist
+(unless (file-directory-p desktop-dirname)
+  (make-directory desktop-dirname t))
+
+;; Load first 10 buffers immediately, rest lazily
+(setq desktop-restore-eager 10)
+
+;; Save desktop periodically
+(setq desktop-auto-save-timeout 300)  ; 5 minutes
+
+;; Don't ask about restoring desktop
+(setq desktop-restore-in-current-display t)
+(setq desktop-load-locked-desktop t)
 
 ;;; Straight Package Manager
 (defvar bootstrap-version)
@@ -106,12 +119,23 @@
   :straight t
   :defer t)
 
-;;; Clipetty - defer slightly
-(use-package clipetty
-  :straight t
-  :defer 0.5
-  :config
-  (global-clipetty-mode))
+
+;;; Clipboard integration with wl-copy (Wayland)
+(setq select-enable-clipboard t
+      select-enable-primary t)
+
+;; Use wl-copy for clipboard in terminal Emacs
+(unless window-system
+  (when (executable-find "wl-copy")
+    (defun wl-copy-handler (text)
+      "Copy TEXT to clipboard using wl-copy."
+      (let ((process-connection-type nil))
+        (let ((proc (start-process "wl-copy" nil "wl-copy")))
+          (process-send-string proc text)
+          (process-send-eof proc))))
+    
+    (setq interprogram-cut-function 'wl-copy-handler)))
+
 
 ;;; Vertico - load early for completion
 (use-package vertico
@@ -248,6 +272,11 @@
   (evil-define-key 'normal 'global (kbd "<leader>as") 'gptel-send)
   (evil-define-key 'normal 'global (kbd "<leader>am") 'gptel-menu)
   (evil-define-key 'normal 'global (kbd "<leader>an") 'gptel))
+
+;;; Reload Config
+(with-eval-after-load 'evil
+  (evil-define-key 'normal 'global (kbd "<leader>rr") 
+    (lambda () (interactive) (load-file user-init-file))))
 
 (use-package evil-collection
   :straight t
