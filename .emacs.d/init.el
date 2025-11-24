@@ -4,11 +4,18 @@
 ;; Basic UI settings (moved from early-init if needed)
 (global-display-line-numbers-mode 1)
 (setq display-line-numbers-type 'relative)
-(add-to-list 'default-frame-alist '(font . "jetbrainsmono nerd font-25"))
+(add-to-list 'default-frame-alist '(font . "jetbrainsmono nerd font-20"))
 
 
 ;; Enable desktop save mode for session persistence
 (desktop-save-mode 1)
+
+(add-hook 'after-make-frame-functions
+          (lambda (frame)
+            (run-with-timer 0.3 nil
+                            (lambda (frame)
+                              (set-frame-size frame 80 100))
+                            frame)))
 
 ;; Directory where desktop files are saved
 (setq desktop-dirname "~/.emacs.d/desktop/")
@@ -51,6 +58,14 @@
 (use-package el-patch
   :straight t
   :defer t)
+
+(use-package which-key
+  :straight t
+  :defer 0.2
+  :config
+  (which-key-mode 1)
+  (setq which-key-idle-delay 0.5
+        which-key-sort-order 'which-key-key-order-alpha))
 
 (use-package ef-themes
   :straight t
@@ -108,12 +123,6 @@
   :defer t
   :mode (("\\.md\\'" . markdown-mode)
          ("\\.markdown\\'" . markdown-mode)))
-
-;;; Smartep package
-(use-package smartrep
-  :straight t
-  :config
-  (setq smartrep-mode-line-active-bg nil))
 
 (use-package rotate
   :straight t
@@ -175,7 +184,7 @@
   (setq evil-want-integration t)
   :config
   (evil-mode 1)
-
+  (add-hook 'minibuffer-setup-hook 'evil-insert-state)
   (evil-set-leader 'normal (kbd "SPC"))
   (evil-set-leader 'visual (kbd "SPC"))
 
@@ -236,36 +245,49 @@
   (setq ibuffer-show-empty-filter-groups nil))
 
 ;;; Window split and Window Rotate
-(define-prefix-command 'my-window-map)
-(let ((map my-window-map))
-  (define-key map (kbd "r") 'rotate-window)
-  (define-key map (kbd "l") 'rotate-layout)
-  (define-key map (kbd "v") 'evil-window-vsplit)
-  (define-key map (kbd "h") 'evil-window-split)
-  (define-key map (kbd "d") 'evil-window-delete)
-  (define-key map (kbd "x") 'delete-other-windows)
-  (define-key map (kbd "=") 'enlarge-window)
-  (define-key map (kbd "-") 'shrink-window)
-  (define-key map (kbd "]") 'enlarge-window-horizontally)
-  (define-key map (kbd "[") 'shrink-window-horizontally))
+;; Install hydra package
+(use-package hydra
+  :straight t
+  :defer t)
 
+;; Define hydra for window management
+(with-eval-after-load 'hydra
+  (defhydra hydra-window (:color red :hint nil)
+    "
+^Split^         ^Resize^        ^Rotate^        ^Scroll^        ^Other^
+^^^^^^^^-----------------------------------------------------------------
+_v_: vertical   _=_: enlarge    _r_: rotate     _j_: down       _d_: delete
+_h_: horizontal _-_: shrink     _l_: layout     _k_: up         _x_: delete others
+^ ^             _]_: widen      ^ ^             ^ ^             _q_: quit
+^ ^             _[_: narrow     ^ ^             ^ ^             ^ ^
+"
+    ;; Split
+    ("v" evil-window-vsplit)
+    ("h" evil-window-split)
+    
+    ;; Resize (these can be repeated)
+    ("=" enlarge-window)
+    ("-" shrink-window)
+    ("]" enlarge-window-horizontally)
+    ("[" shrink-window-horizontally)
+    
+    ;; Rotate (these can be repeated)
+    ("r" rotate-window)
+    ("l" rotate-layout)
+    
+    ;; Scroll (can be repeated)
+    ("j" evil-scroll-down)
+    ("k" evil-scroll-up)
+    
+    ;; Other
+    ("d" evil-window-delete)
+    ("x" delete-other-windows :exit t)
+    ("q" nil :exit t)))
+
+;; Bind to leader key
 (with-eval-after-load 'evil
-  (evil-define-key 'normal 'global (kbd "<leader>w") 'my-window-map))
+  (evil-define-key 'normal 'global (kbd "<leader>w") 'hydra-window/body))
 
-;; Smartrep for window commands - defer until used
-(with-eval-after-load 'smartrep
-  (smartrep-define-key
-    my-window-map
-    nil
-    '(("r" . rotate-window)
-      ("l" . rotate-layout)
-      ("v" . evil-window-vsplit)
-      ("h" . evil-window-split)
-      ("d" . evil-window-delete)
-      ("=" . enlarge-window)
-      ("-" . shrink-window)
-      ("]" . enlarge-window-horizontally)
-      ("[" . shrink-window-horizontally))))
 
 ;;; Gptel keybindings
 (with-eval-after-load 'evil
@@ -281,10 +303,16 @@
 (use-package evil-collection
   :straight t
   :after evil
+  :init
+  (setq evil-want-keybinding nil)
   :config
   (evil-collection-init)
-  (with-eval-after-load 'dired
-    (evil-define-key 'normal dired-mode-map (kbd "SPC") nil)))
+    (dolist (mode '(dired-mode-map 
+                  ibuffer-mode-map 
+                  help-mode-map
+                  debugger-mode-map))
+    (when (boundp mode)
+      (evil-define-key 'normal (symbol-value mode) (kbd "SPC") nil))))
 
 (use-package evil-escape
   :straight t
@@ -330,14 +358,14 @@
   (set-face-attribute 'default nil
                       :font "jetbrainsmono nerd font"
                       :weight 'normal
-                      :height 140)
+                      :height 220)
   (set-face-attribute 'fixed-pitch nil
                       :font "jetbrainsmono nerd font"
                       :weight 'normal
-                      :height 140)
+                      :height 220)
   (set-face-attribute 'variable-pitch nil
                       :font "jetbrainsmono nerd font"
-                      :height 120
+                      :height 220
                       :weight 'normal))
 
 ;; Window separator
