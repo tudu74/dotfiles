@@ -1,0 +1,914 @@
+#+TITLE: Emacs Configuration
+#+AUTHOR: Phatu Tudu
+#+PROPERTY: header-args :tangle init.el :comments link
+
+* Introduction
+This is an optimized Emacs configuration using literate programming with Org mode.
+Use =M-x org-babel-tangle= to generate the init.el file.
+
+* Early Setup
+** Basic UI Settings
+#+begin_src emacs-lisp
+   ;;; init.el --- Optimized Emacs Configuration -*- lexical-binding: t -*-
+
+   ;; Basic UI settings (moved from early-init if needed)
+   (global-display-line-numbers-mode 1)
+   (setq display-line-numbers-type 'relative)
+   (add-to-list 'default-frame-alist '(font . "jetbrainsmono nerd font-20"))
+   ;; This is for the Tab to work in terminal for org-mode
+   (setq evil-want-C-i-jump nil)
+
+   ;; FIX: Ensure the core 'seq' library is loaded globally to resolve
+   ;; FIX: dependency errors like 'seq-empty-p' missing.
+   (require 'seq)
+#+end_src
+
+** Desktop Save Mode
+Enable session persistence to restore buffers and window configurations.
+#+begin_src emacs-lisp
+  ;; Enable desktop save mode for session persistence
+  (desktop-save-mode 1)
+
+  (add-hook 'after-make-frame-functions
+            (lambda (frame)
+              (run-with-timer 0.3 nil
+                              (lambda (frame)
+                                (set-frame-size frame 80 100))
+                              frame)))
+
+  ;; Directory where desktop files are saved
+  (setq desktop-dirname "~/.emacs.d/desktop/")
+  (setq desktop-path (list desktop-dirname))
+
+  ;; Create directory if it doesn't exist
+  (unless (file-directory-p desktop-dirname)
+    (make-directory desktop-dirname t))
+
+  ;; Load first 10 buffers immediately, rest lazily
+  (setq desktop-restore-eager 10)
+
+  ;; Save desktop periodically
+  (setq desktop-auto-save-timeout 300)  ; 5 minutes
+
+  ;; Don't ask about restoring desktop
+  (setq desktop-restore-in-current-display t)
+  (setq desktop-load-locked-desktop t)
+#+end_src
+
+** Recent Files
+#+begin_src emacs-lisp
+(recentf-mode 1)
+(setq recentf-max-saved-items 100      ; Remember last 100 files
+      recentf-max-menu-items 15         ; Show 15 items in menu
+      recentf-auto-cleanup 'never)      ; Don't cleanup at startup (faster)
+#+end_src
+
+* Package Management
+** Straight.el Bootstrap
+#+begin_src emacs-lisp
+;;; Straight Package Manager
+(defvar bootstrap-version)
+(let ((bootstrap-file
+       (expand-file-name
+        "straight/repos/straight.el/bootstrap.el"
+        (or (bound-and-true-p straight-base-dir)
+            user-emacs-directory)))
+      (bootstrap-version 7))
+  (unless (file-exists-p bootstrap-file)
+    (with-current-buffer
+        (url-retrieve-synchronously
+         "https://raw.githubusercontent.com/radian-software/straight.el/develop/install.el"
+         'silent 'inhibit-cookies)
+      (goto-char (point-max))
+      (eval-print-last-sexp)))
+  (load bootstrap-file nil 'nomessage))
+#+end_src
+
+** Use-Package
+#+begin_src emacs-lisp
+;;; Install Use-Package
+(straight-use-package 'use-package)
+#+end_src
+
+** El-Patch
+#+begin_src emacs-lisp
+(use-package el-patch
+  :straight t
+  :defer t)
+#+end_src
+
+* Org-Mode
+** Visual Enchancements
+#+begin_src emacs-lisp
+;; org-bullets: Use unicode characters for list markers
+(use-package org-bullets
+  :straight t
+  :hook (org-mode . org-bullets-mode)
+  :config
+  (setq org-bullets-bullet-list '("◉" "○" "●" "▶" "•" "◦" "■")))
+
+#+end_src
+
+* UI Enhancements
+** Which-Key
+Display available keybindings in a popup.
+#+begin_src emacs-lisp
+(use-package which-key
+  :straight t
+  :defer 0.2
+  :config
+  (which-key-mode 1)
+  (setq which-key-idle-delay 0.5
+        which-key-sort-order 'which-key-key-order-alpha))
+#+end_src
+
+** Theme Configuration
+#+begin_src emacs-lisp
+  (use-package doom-themes
+  :straight t
+  :custom
+  ;; Global settings (defaults)
+  (doom-themes-enable-bold t)   ; if nil, bold is universally disabled
+  (doom-themes-enable-italic t) ; if nil, italics is universally disabled
+  ;; for treemacs users
+  (doom-themes-treemacs-theme "doom-tokyo-night") ; use "doom-colors" for less minimal icon theme
+  :config
+  (load-theme 'doom-tokyo-night t)
+
+  ;; Enable flashing mode-line on errors
+  (doom-themes-visual-bell-config)
+  ;; Enable custom neotree theme (nerd-icons must be installed!)
+  (doom-themes-neotree-config)
+  ;; or for treemacs users
+  (doom-themes-treemacs-config)
+  ;; Corrects (and improves) org-mode's native fontification.
+  (doom-themes-org-config))
+#+end_src
+
+** Nerd Icons
+#+begin_src emacs-lisp
+;;; Nerd-icons - defer until needed
+(use-package nerd-icons
+  :straight t
+  :defer t)
+
+(use-package nerd-icons-dired
+  :straight t
+  :defer t
+  :hook (dired-mode . nerd-icons-dired-mode))
+#+end_src
+
+** Spacious Padding
+#+begin_src emacs-lisp
+;;; Spacious-padding - defer
+(use-package spacious-padding
+  :straight t
+  :defer t)
+#+end_src
+
+** Custom Mode Line
+#+begin_src emacs-lisp
+;;; Custom Mode Line
+(setq-default mode-line-format
+              '("%e"
+                my-modeline-buffer-name
+                "  "
+                my-modeline-major-mode
+                "  "
+                my-modeline-evil-state))
+
+(defface my-modeline-background
+  '((t :background "#3355bb" :foreground "white" :inherit bold))
+  "Face with a background for use on the mode line.")
+
+(defun my-modeline-buffer-name ()
+  "Return buffer-name with spaces around it."
+  (format " %s " (buffer-name)))
+
+(defvar-local my-modeline-buffer-name
+  '(:eval
+    (format "%s"
+            (propertize (my-modeline-buffer-name) 'face 'my-modeline-background)))
+  "Mode line construct to display the buffer name")
+
+(put 'my-modeline-buffer-name 'risky-local-variable t)
+
+(defun my-modeline-major-mode-name ()
+  "Return capitalized major-mode with icon."
+  (let ((icon (if (fboundp 'nerd-icons-icon-for-mode)
+                  (nerd-icons-icon-for-mode major-mode)
+                ""))
+        (mode-name (capitalize (symbol-name major-mode))))
+    (format "%s %s" icon mode-name)))
+
+(defvar-local my-modeline-major-mode
+    '(:eval
+        (format "%s"
+                (propertize (my-modeline-major-mode-name) 'face 'bold)))
+  "Mode line construct to display the major mode.")
+
+(put 'my-modeline-major-mode 'risky-local-variable t)
+
+(defface my-modeline-evil-normal
+  '((t :background "#00aa00" :foreground "white" :inherit bold))
+  "Face for Evil normal state.")
+
+(defface my-modeline-evil-insert
+  '((t :background "#ff6600" :foreground "white" :inherit bold))
+  "Face for Evil insert state.")
+
+(defface my-modeline-evil-visual
+  '((t :background "#cc00cc" :foreground "white" :inherit bold))
+  "Face for Evil visual state.")
+
+(defface my-modeline-evil-replace
+  '((t :background "#ff0000" :foreground "white" :inherit bold))
+  "Face for Evil replace state.")
+
+(defun my-modeline-evil-state ()
+  "Return the current Evil state as a propertized string."
+  (when (bound-and-true-p evil-mode)
+    (let ((state (evil-state-property evil-state :tag t)))
+      (cond
+       ((eq evil-state 'normal)
+        (propertize " NORMAL " 'face 'my-modeline-evil-normal))
+       ((eq evil-state 'insert)
+        (propertize " INSERT " 'face 'my-modeline-evil-insert))
+       ((eq evil-state 'visual)
+        (propertize " VISUAL " 'face 'my-modeline-evil-visual))
+       ((eq evil-state 'replace)
+        (propertize " REPLACE " 'face 'my-modeline-evil-replace))
+       (t (propertize (format " %s " (upcase (symbol-name evil-state))) 'face 'my-modeline-background))))))
+
+(defvar-local my-modeline-evil-state
+  '(:eval (my-modeline-evil-state))
+  "Mode line construct to display Evil state.")
+
+(put 'my-modeline-evil-state 'risky-local-variable t)
+#+end_src
+
+** Appearance Settings
+#+begin_src emacs-lisp
+;;; ----- Appearance -----
+
+(defun dw/set-terminal-title (title)
+  (send-string-to-terminal (format "\e]0;%s\a" title)))
+
+(defun dw/clear-background-color (&optional frame)
+  (interactive)
+  (or frame (setq frame (selected-frame)))
+  "unsets the background color in terminal mode"
+  (unless (display-graphic-p frame)
+    (send-string-to-terminal
+     (format "\033]11;[90]%s\033\\"
+         (face-attribute 'default :background)))
+    (set-face-background 'default "unspecified-bg" frame)))
+
+;; Clear background for transparent terminals
+(unless (display-graphic-p)
+  (add-hook 'after-make-frame-functions 'dw/clear-background-color)
+  (add-hook 'window-setup-hook 'dw/clear-background-color))
+
+;; GUI-specific settings
+(when (display-graphic-p)
+  (set-face-attribute 'default nil
+                      :font "jetbrainsmono nerd font"
+                      :weight 'normal
+                      :height 200)
+  (set-face-attribute 'fixed-pitch nil
+                      :font "jetbrainsmono nerd font"
+                      :weight 'normal
+                      :height 200)
+  (set-face-attribute 'variable-pitch nil
+                      :font "jetbrainsmono nerd font"
+                      :height 200
+                      :weight 'normal))
+
+;; Window separator
+(set-display-table-slot standard-display-table 'vertical-border (make-glyph-code ? ))
+#+end_src
+
+* AI Integration
+** Gptel Configuration
+#+begin_src emacs-lisp
+;;; Gptel
+
+;; make .authinfo.gpg file in home directory
+;; write machine gemini login apikey password YOUR_API_KEY in
+;; .authinfo.gpg file
+
+(defun my-get-api-key-secure ()
+  "Read an API key securely from auth-source."
+    (require 'auth-source)
+    (let ((info (car (auth-source-search :host "gemini"))))
+    (when info
+        (funcall (plist-get info :secret)))))
+
+(use-package gptel
+  :straight t
+  :defer t
+  :commands (gptel gptel-send gptel-menu)
+  :init
+  (setq gptel-model 'gemini-2.5-pro-exp-03-25
+        gptel-backend (gptel-make-gemini "Gemini"
+                        :key (my-get-api-key-secure)
+                        :stream t)))
+#+end_src
+
+** Gptel Keybindings
+#+begin_src emacs-lisp
+;;; Gptel keybindings
+(with-eval-after-load 'evil
+  (evil-define-key 'normal 'global (kbd "<leader>as") 'gptel-send)
+  (evil-define-key 'normal 'global (kbd "<leader>am") 'gptel-menu)
+  (evil-define-key 'normal 'global (kbd "<leader>an") 'gptel))
+#+end_src
+
+* Completion Framework
+** Vertico
+Vertical completion interface.
+#+begin_src emacs-lisp
+;;; Vertico - load early for completion
+(use-package vertico
+  :straight t
+  :init
+  (vertico-mode 1)
+  :config
+  (setq vertico-cycle t)
+  ;; Add Evil keybindings to Vertico
+  (with-eval-after-load 'evil
+    ;; In insert state (when typing in minibuffer)
+    (evil-define-key 'insert vertico-map
+      (kbd "C-n") 'vertico-next
+      (kbd "C-p") 'vertico-previous
+      (kbd "C-u") 'vertico-scroll-down
+      (kbd "C-d") 'vertico-scroll-up)
+    
+    ;; In normal state (if you press ESC or jk in minibuffer)
+    (evil-define-key 'normal vertico-map
+      (kbd "C-n") 'vertico-next
+      (kbd "C-p") 'vertico-previous
+      (kbd "gg") 'vertico-first
+      (kbd "G") 'vertico-last
+      (kbd "C-u") 'vertico-scroll-down
+      (kbd "C-d") 'vertico-scroll-up)))
+#+end_src
+
+** Orderless
+Flexible completion style.
+#+begin_src emacs-lisp
+;;; Orderless - load with vertico
+(use-package orderless
+  :straight t
+  :config
+  (setq completion-styles '(orderless basic)
+        completion-category-defaults nil
+        completion-category-overrides '((file (styles partial-completion)))))
+#+end_src
+
+** Marginalia
+Rich annotations for completions.
+#+begin_src emacs-lisp
+;;; Marginalia - load with vertico
+(use-package marginalia
+  :straight t
+  :init
+  (marginalia-mode 1))
+#+end_src
+
+** Consult
+Enhanced completion commands.
+#+begin_src emacs-lisp
+;;; Consult - defer but preload for common commands
+(use-package consult
+  :straight t
+  :defer 0.1
+  :config
+  (setq consult-ripgrep-args "rg --null --line-buffered --color=never --max-columns=1000 --path-separator / --smart-case --no-heading --with-filename --line-number --search-zip --hidden")
+  (setq consult-fd-args "fd --color=never --full-path --hidden --no-ignore --type f --exclude .git")
+;; Preview configuration
+  (consult-customize
+   consult-ripgrep consult-git-grep consult-grep
+   consult-bookmark consult-recent-file
+   :preview-key '(:debounce 0.2 any)))
+#+end_src
+
+** Company Mode
+Auto-completion framework.
+#+begin_src emacs-lisp
+(use-package company
+  :straight t
+  :defer 0.2
+  :hook (prog-mode . company-mode)
+  :config
+  (setq company-minimum-prefix-length 1
+        company-idle-delay 0.1
+        company-selection-wrap-around t
+        company-tooltip-align-annotations t
+        company-show-numbers t
+        company-backends '((company-capf company-files))
+        company-global-modes '(not erc-mode message-mode help-mode))
+  
+  ;; Evil-friendly company navigation
+  (with-eval-after-load 'evil
+    (define-key company-active-map (kbd "C-n") 'company-select-next)
+    (define-key company-active-map (kbd "C-p") 'company-select-previous)
+    (define-key company-active-map (kbd "C-l") 'company-complete-selection)
+    (define-key company-active-map (kbd "<tab>") 'company-complete-common-or-cycle)
+    (define-key company-active-map (kbd "C-h") 'company-show-doc-buffer)))
+
+(use-package company-box
+  :straight t
+  :defer t
+  :hook (company-mode . company-box-mode))
+#+end_src
+
+* Evil Mode
+** Evil Core
+Vim emulation layer.
+#+begin_src emacs-lisp
+;;; Evil-Mode - load early since it's core to workflow
+(use-package evil
+  :straight t
+  :init
+  (setq evil-want-keybinding nil)
+  (setq evil-want-integration t)
+  (setq evil-want-minibuffer t)
+  (setq evil-undo-system 'undo-redo)
+  :config
+  (evil-mode 1)
+  (define-key evil-insert-state-map (kbd "C-n") nil)
+  (define-key evil-insert-state-map (kbd "C-p") nil)
+  (define-key evil-insert-state-map (kbd "C-j") nil)
+  (define-key evil-insert-state-map (kbd "C-k") nil)
+  (add-hook 'minibuffer-setup-hook 'evil-insert-state)
+  (evil-set-leader 'normal (kbd "SPC"))
+  (evil-set-leader 'visual (kbd "SPC"))
+
+  ;; Force normal state in special buffers
+  (evil-set-initial-state 'debugger-mode 'normal)
+  (evil-set-initial-state 'dired-mode 'normal)
+  (evil-set-initial-state 'compilation-mode 'normal)
+  (evil-set-initial-state 'help-mode 'normal)
+  (evil-set-initial-state 'Info-mode 'normal)
+  (evil-set-initial-state 'package-menu-mode 'motion)
+
+  ;; Transient buffers should use Emacs state (for gptel-menu, magit, etc.)
+  (evil-set-initial-state 'transient-base-mode 'emacs)
+
+  ;; Optional: Start in insert state when entering minibuffer
+  (add-hook 'minibuffer-setup-hook
+            (lambda ()
+              (when (bound-and-true-p evil-mode)
+                (evil-insert-state))))
+
+  ;; Custom functions for home directory search
+  (defun my/consult-fd-home ()
+    "Run consult-fd from home directory."
+    (interactive)
+    (let ((default-directory "/home/tudu/"))
+      (consult-fd)))
+  
+  (defun my/consult-ripgrep-home ()
+    "Run consult-ripgrep from home directory."
+    (interactive)
+    (let ((default-directory "/home/tudu/"))
+      (consult-ripgrep)))
+  
+  ;;; KEYBINDINGS
+  
+  ;; Dired keybindings
+  (evil-define-key 'normal 'global (kbd "<leader>d") 'dired-jump)
+  (evil-define-key 'normal 'global (kbd "<leader>D") 'dired)
+  
+  ;; File finding
+  (evil-define-key 'normal 'global (kbd "<leader>fh") 'my/consult-fd-home)
+  (evil-define-key 'normal 'global (kbd "<leader>fc") 'consult-fd)
+  
+  ;; Grep/Search
+  (evil-define-key 'normal 'global (kbd "<leader>gh") 'my/consult-ripgrep-home)
+  (evil-define-key 'normal 'global (kbd "<leader>gc") 'consult-ripgrep)
+  (evil-define-key 'normal 'global (kbd "<leader>ss") 'consult-line)
+  
+  ;; Recent files
+  (evil-define-key 'normal 'global (kbd "<leader>fr") 'consult-recent-file)
+  
+  ;; Buffers
+  (evil-define-key 'normal 'global (kbd "<leader>bl") 'consult-buffer)
+  (evil-define-key 'normal 'global (kbd "<leader>bp") 'previous-buffer)
+  (evil-define-key 'normal 'global (kbd "<leader>bn") 'next-buffer)
+  (evil-define-key 'normal 'global (kbd "<leader>bd") 'kill-current-buffer)
+  (evil-define-key 'normal 'global (kbd "<leader>bD") 'kill-buffer)
+  (evil-define-key 'normal 'global (kbd "<leader>bm") 'ibuffer)
+
+  ;; Git
+  (evil-define-key 'normal 'global (kbd "<leader>gf") 'consult-git-grep)
+  
+  ;; Window navigation
+  (evil-define-key 'normal 'global (kbd "H") 'evil-window-left)
+  (evil-define-key 'normal 'global (kbd "J") 'evil-window-down)
+  (evil-define-key 'normal 'global (kbd "K") 'evil-window-up)
+  (evil-define-key 'normal 'global (kbd "L") 'evil-window-right)
+ ;;Fix redo keybinding (override Emacs reverse search)
+  
+  ;; U for redo
+  (evil-define-key 'normal 'global (kbd "U") 'undo-redo))
+
+;; Window navigation in insert mode with C-u prefix
+(with-eval-after-load 'evil
+  ;; Insert mode window navigation with C-u prefix
+  (define-key evil-insert-state-map (kbd "C-u h") 'evil-window-left)
+  (define-key evil-insert-state-map (kbd "C-u j") 'evil-window-down)
+  (define-key evil-insert-state-map (kbd "C-u k") 'evil-window-up)
+  (define-key evil-insert-state-map (kbd "C-u l") 'evil-window-right))
+#+end_src
+
+** Evil Collection
+Evil bindings for many modes.
+#+begin_src emacs-lisp
+  (use-package evil-collection
+    :straight t
+    :defer t
+    :after evil
+    :init
+    (setq evil-want-keybinding nil)
+    :config
+    (evil-collection-init)
+    
+    ;; Function to unbind SPC in a mode
+    (defun my/unbind-leader-in-mode (mode-map)
+      "Unbind SPC from MODE-MAP to preserve leader key."
+      (when (boundp mode-map)
+        (evil-define-key 'normal (symbol-value mode-map) (kbd "SPC") nil)))
+    
+    ;; Unbind immediately for already-loaded modes
+    (dolist (mode '(dired-mode-map 
+                    ibuffer-mode-map 
+                    help-mode-map
+                    Info-mode-map
+                    debugger-mode-map))
+      (my/unbind-leader-in-mode mode))
+    
+    ;; Also unbind when entering these modes (more reliable)
+    (add-hook 'dired-mode-hook 
+              (lambda () (evil-define-key 'normal dired-mode-map (kbd "SPC") nil)))
+    (add-hook 'ibuffer-mode-hook 
+              (lambda () (evil-define-key 'normal ibuffer-mode-map (kbd "SPC") nil)))
+    (add-hook 'help-mode-hook 
+              (lambda () (evil-define-key 'normal help-mode-map (kbd "SPC") nil)))
+    (add-hook 'Info-mode-hook 
+              (lambda () (evil-define-key 'normal Info-mode-map (kbd "SPC") nil)))
+    (add-hook 'debugger-mode-hook 
+              (lambda () (evil-define-key 'normal debugger-mode-map (kbd "SPC") nil))))
+#+end_src
+
+** Evil Extensions
+#+begin_src emacs-lisp
+  (use-package evil-surround
+    :straight t
+    :after evil
+    :config
+    (global-evil-surround-mode 1))
+
+  (use-package evil-commentary
+    :straight t
+    :after evil
+    :config
+    (evil-commentary-mode 1))
+
+  (use-package evil-escape
+    :straight t
+    :defer 0.2
+    :after evil
+    :config
+    (evil-escape-mode 1)
+    (setq evil-escape-key-sequence "jk")
+    (setq evil-escape-delay 0.3))
+#+end_src
+
+* Programming Support
+** LSP Mode
+Language Server Protocol support.
+#+begin_src emacs-lisp
+;; LSP-MODE - Language Server Protocol Support
+
+(use-package lsp-mode
+  :straight t
+  :defer t
+  :commands (lsp lsp-deferred)
+  :init
+  ;; Performance optimizations
+  (setq lsp-keymap-prefix "C-c l"
+        lsp-idle-delay 0.5
+        lsp-log-io nil
+        lsp-enable-file-watchers nil
+        lsp-file-watch-threshold 5000
+        lsp-headerline-breadcrumb-enable nil
+        lsp-modeline-code-actions-enable nil
+        lsp-modeline-diagnostics-enable t
+        lsp-completion-provider :none  ; Use company instead
+        lsp-enable-snippet nil
+        lsp-lens-enable nil)
+  
+  :hook ((rust-mode . lsp-deferred)
+         (c-mode . lsp-deferred)
+         (c++-mode . lsp-deferred)
+         (lsp-mode . lsp-enable-which-key-integration))
+  
+  :config
+  ;; Better performance
+  (setq read-process-output-max (* 1024 1024)  ; 1MB
+        gc-cons-threshold (* 100 1024 1024))    ; 100MB during LSP
+  
+  ;; Enable specific LSP features
+  (setq lsp-signature-auto-activate nil
+        lsp-signature-render-documentation nil
+        lsp-eldoc-render-all nil
+    lsp-eldoc-enable-hover nil))
+
+;; Evil keybindings for LSP
+(with-eval-after-load 'lsp-mode
+  (with-eval-after-load 'evil
+    ;; Navigation
+    (evil-define-key 'normal lsp-mode-map (kbd "<leader>ld") 'lsp-find-definition)
+    (evil-define-key 'normal lsp-mode-map (kbd "<leader>lr") 'lsp-find-references)
+    (evil-define-key 'normal lsp-mode-map (kbd "<leader>li") 'lsp-find-implementation)
+    (evil-define-key 'normal lsp-mode-map (kbd "<leader>lt") 'lsp-find-type-definition)
+    
+    ;; Documentation - FIXED
+    (evil-define-key 'normal lsp-mode-map (kbd "<leader>lh") 'lsp-describe-thing-at-point)
+    
+    ;; Actions
+    (evil-define-key 'normal lsp-mode-map (kbd "<leader>la") 'lsp-execute-code-action)
+    (evil-define-key 'normal lsp-mode-map (kbd "<leader>lR") 'lsp-rename)
+    (evil-define-key 'normal lsp-mode-map (kbd "<leader>lf") 'lsp-format-buffer)
+    
+    ;; Workspace
+    (evil-define-key 'normal lsp-mode-map (kbd "<leader>lw") 'lsp-restart-workspace)
+    (evil-define-key 'normal lsp-mode-map (kbd "<leader>lq") 'lsp-workspace-shutdown)))
+#+end_src
+
+** Flycheck
+Syntax checking.
+#+begin_src emacs-lisp
+(use-package flycheck
+  :straight t
+  :defer t
+  :hook (prog-mode . flycheck-mode)
+  :config
+  (setq flycheck-indication-mode 'left-fringe
+        flycheck-check-syntax-automatically '(save mode-enabled)
+        flycheck-display-errors-delay 0.5))
+
+;; Evil keybindings for flycheck
+(with-eval-after-load 'flycheck
+  (with-eval-after-load 'evil
+    (evil-define-key 'normal 'global (kbd "<leader>cn") 'flycheck-next-error)
+    (evil-define-key 'normal 'global (kbd "<leader>cp") 'flycheck-previous-error)
+    (evil-define-key 'normal 'global (kbd "<leader>cl") 'flycheck-list-errors)))
+#+end_src
+
+** Language Modes
+*** Rust
+#+begin_src emacs-lisp
+;; RUST - Requires: rustup component add rust-analyzer
+
+(use-package rust-mode
+  :straight t
+  :defer t
+  :mode ("\\.rs\\'" . rust-mode)
+  :config
+  (setq rust-format-on-save t
+        rust-indent-offset 4))
+
+;; Keybinding to compile/run
+(with-eval-after-load 'evil
+  (evil-define-key 'normal rust-mode-map (kbd "<leader>cr") 
+    (lambda () (interactive) (compile "cargo run")))
+  (evil-define-key 'normal rust-mode-map (kbd "<leader>cb") 
+    (lambda () (interactive) (compile "cargo build")))
+  (evil-define-key 'normal rust-mode-map (kbd "<leader>ct") 
+    (lambda () (interactive) (compile "cargo test"))))
+#+end_src
+
+*** C/C++
+#+begin_src emacs-lisp
+(use-package c-mode
+  :ensure nil
+  :defer t
+  :config
+  (setq c-basic-offset 4
+        c-default-style "linux"))
+
+(use-package c++-mode
+  :ensure nil
+  :defer t
+  :config
+  (setq c-basic-offset 4
+        c-default-style "linux"))
+#+end_src
+
+*** Elisp
+#+begin_src emacs-lisp
+;; Elisp-specific enhancements
+(use-package elisp-mode
+  :ensure nil
+  :defer t
+  :config
+  ;; Better indentation
+  (setq lisp-indent-offset 2)
+  
+  ;; Show function signatures in minibuffer
+  (add-hook 'emacs-lisp-mode-hook 'eldoc-mode)
+  
+  ;; Highlight matching parens
+  (add-hook 'emacs-lisp-mode-hook 'show-paren-mode))
+
+;; Better help for Elisp
+(use-package helpful
+  :straight t
+  :defer t
+  :bind (("C-h f" . helpful-callable)
+         ("C-h v" . helpful-variable)
+         ("C-h k" . helpful-key)
+         ("C-h F" . helpful-function)
+         ("C-h C" . helpful-command)))
+
+;; Elisp keybindings
+(with-eval-after-load 'evil
+  (evil-define-key 'normal emacs-lisp-mode-map (kbd "<leader>ee") 'eval-last-sexp)
+  (evil-define-key 'normal emacs-lisp-mode-map (kbd "<leader>eb") 'eval-buffer)
+  (evil-define-key 'normal emacs-lisp-mode-map (kbd "<leader>ef") 'eval-defun)
+  (evil-define-key 'normal emacs-lisp-mode-map (kbd "<leader>er") 'eval-region)
+  
+  ;; Help keybindings
+  (evil-define-key 'normal 'global (kbd "<leader>hf") 'helpful-callable)
+  (evil-define-key 'normal 'global (kbd "<leader>hv") 'helpful-variable)
+  (evil-define-key 'normal 'global (kbd "<leader>hk") 'helpful-key))
+#+end_src
+
+*** Markdown
+#+begin_src emacs-lisp
+;;; Markdown Mode - defer until opening .md files
+(use-package markdown-mode
+  :straight t
+  :defer t
+  :mode (("\\.md\\'" . markdown-mode)
+         ("\\.markdown\\'" . markdown-mode)))
+#+end_src
+
+** Rainbow Delimiters
+#+begin_src emacs-lisp
+(use-package rainbow-delimiters
+  :straight t
+  :defer t
+  :hook ((emacs-lisp-mode . rainbow-delimiters-mode)
+         (lisp-mode . rainbow-delimiters-mode)
+         (scheme-mode . rainbow-delimiters-mode)))
+#+end_src
+
+* File Management
+** Dired
+#+begin_src emacs-lisp
+(use-package dired
+  :ensure nil
+  :defer t
+  :config
+  (setq dired-listing-switches "-alh --group-directories-first"
+        dired-dwim-target t
+
+        ; Clean up old dired buffers
+        dired-kill-when-opening-new-dired-buffer t 
+        dired-recursive-copies 'always
+        dired-recursive-deletes 'always)
+  
+       ;; Auto-refresh dired when files change
+       (add-hook 'dired-mode-hook 'auto-revert-mode))
+#+end_src
+
+** Ibuffer
+#+begin_src emacs-lisp
+;; ibuffer config
+(use-package ibuffer
+  :ensure nil
+  :defer t
+  :config
+  (setq ibuffer-expert t)
+  (setq ibuffer-show-empty-filter-groups nil))
+#+end_src
+
+* Version Control
+** Magit
+#+begin_src emacs-lisp
+(use-package magit
+  :straight t
+  :defer t
+  :bind (("<leader>gg" . magit-status)
+         ("<leader>gd" . magit-diff-buffer-file)
+         ("<leader>gb" . magit-blame)))
+#+end_src
+
+* Window Management
+** Rotate
+#+begin_src emacs-lisp
+(use-package rotate
+  :straight t
+  :defer t)
+#+end_src
+
+** Hydra for Window Operations
+#+begin_src emacs-lisp
+;;; Window split and Window Rotate
+;; Install hydra package
+(use-package hydra
+  :straight t
+  :defer t)
+
+;; Define hydra for window management
+(with-eval-after-load 'hydra
+  (defhydra hydra-window (:color red :hint nil)
+    "
+^Split^         ^Resize^        ^Rotate^        ^Scroll^        ^Other^
+^^^^^^^^-----------------------------------------------------------------
+_v_: vertical   _=_: enlarge    _r_: rotate     _j_: down       _d_: delete
+_h_: horizontal _-_: shrink     _l_: layout     _k_: up         _x_: delete others
+^ ^             _]_: widen      ^ ^             ^ ^             _q_: quit
+^ ^             _[_: narrow     ^ ^             ^ ^             ^ ^
+"
+    ;; Split
+    ("v" evil-window-vsplit)
+    ("h" evil-window-split)
+    
+    ;; Resize (these can be repeated)
+    ("=" enlarge-window)
+    ("-" shrink-window)
+    ("]" enlarge-window-horizontally)
+    ("[" shrink-window-horizontally)
+    
+    ;; Rotate (these can be repeated)
+    ("r" rotate-window)
+    ("l" rotate-layout)
+    
+    ;; Scroll (can be repeated)
+    ("j" evil-scroll-down)
+    ("k" evil-scroll-up)
+    
+    ;; Other
+    ("d" evil-window-delete)
+    ("x" delete-other-windows :exit t)
+    ("q" nil :exit t)))
+
+;; Bind to leader key
+(with-eval-after-load 'evil
+  (evil-define-key 'normal 'global (kbd "<leader>w") 'hydra-window/body))
+#+end_src
+
+* System Integration
+** Clipboard (Wayland)
+#+begin_src emacs-lisp
+;;; Clipboard integration with wl-copy (Wayland)
+(setq select-enable-clipboard t
+      select-enable-primary t)
+
+;; Use wl-copy for clipboard in terminal Emacs
+(unless window-system
+  (when (executable-find "wl-copy")
+    (defun wl-copy-handler (text)
+      "Copy TEXT to clipboard using wl-copy."
+      (let ((process-connection-type nil))
+        (let ((proc (start-process "wl-copy" nil "wl-copy")))
+          (process-send-string proc text)
+          (process-send-eof proc))))
+    
+    (setq interprogram-cut-function 'wl-copy-handler)))
+#+end_src
+
+* Utility Commands
+** Reload Configuration
+#+begin_src emacs-lisp
+;;; Reload Config
+(with-eval-after-load 'evil
+  (evil-define-key 'normal 'global (kbd "<leader>rr") 
+    (lambda () (interactive) (load-file user-init-file))))
+#+end_src
+
+* Performance Optimization
+** Garbage Collection
+#+begin_src emacs-lisp
+;;; Reset GC after startup
+(add-hook 'emacs-startup-hook
+  (lambda ()
+    (setq gc-cons-threshold (* 16 1024 1024)
+          gc-cons-percentage 0.1)
+    ;; Run GC when idle
+    (run-with-idle-timer 5 t #'garbage-collect)))
+#+end_src
+
+* Custom Settings
+#+begin_src emacs-lisp
+(custom-set-variables
+ '(package-selected-packages '(gptel)))
+(custom-set-faces)
+
+;;; init.el ends here
+#+end_src
