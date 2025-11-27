@@ -1,6 +1,7 @@
 #+TITLE: Emacs Configuration
 #+AUTHOR: Phatu Tudu
-#+PROPERTY: header-args :tangle init.el :comments link
+#+PROPERTY: header-args :tangle init.el :lexical yes
+#+STARTUP: overview
 
 * Introduction
 This is an optimized Emacs configuration using literate programming with Org mode.
@@ -9,50 +10,65 @@ Use =M-x org-babel-tangle= to generate the init.el file.
 * Early Setup
 ** Basic UI Settings
 #+begin_src emacs-lisp
-   ;;; init.el --- Optimized Emacs Configuration -*- lexical-binding: t -*-
+  ;;; init.el --- Optimized Emacs Configuration -*- lexical-binding: t -*-
 
-   ;; Basic UI settings (moved from early-init if needed)
-   (global-display-line-numbers-mode 1)
-   (setq display-line-numbers-type 'relative)
-   (add-to-list 'default-frame-alist '(font . "jetbrainsmono nerd font-20"))
-   ;; This is for the Tab to work in terminal for org-mode
-   (setq evil-want-C-i-jump nil)
+  ;; Basic UI settings (moved from early-init if needed)
+  (global-display-line-numbers-mode 1)
+  (setq display-line-numbers-type 'relative)
+  (add-to-list 'default-frame-alist '(font . "jetbrainsmono nerd font-16"))
+  ;; This is for the Tab to work in terminal for org-mode
+  (setq evil-want-C-i-jump nil)
 
-   ;; FIX: Ensure the core 'seq' library is loaded globally to resolve
-   ;; FIX: dependency errors like 'seq-empty-p' missing.
-   (require 'seq)
+  ;; FIX: Ensure the core 'seq' library is loaded globally to resolve
+  ;; FIX: dependency errors like 'seq-empty-p' missing.
+  (require 'seq)
+
+  ;; Smooth Scrolling
+  (setq scroll-margin 0
+      scroll-conservatively 100000
+      scroll-preserve-screen-position 'always)
+
 #+end_src
 
 ** Desktop Save Mode
 Enable session persistence to restore buffers and window configurations.
 #+begin_src emacs-lisp
-  ;; Enable desktop save mode for session persistence
-  (desktop-save-mode 1)
+    ;; Enable desktop save mode for session persistence
+    (desktop-save-mode 1)
 
-  (add-hook 'after-make-frame-functions
-            (lambda (frame)
-              (run-with-timer 0.3 nil
-                              (lambda (frame)
-                                (set-frame-size frame 80 100))
-                              frame)))
+    (add-hook 'after-make-frame-functions
+              (lambda (frame)
+                (run-with-timer 0.3 nil
+                                (lambda (frame)
+                                  (set-frame-size frame 80 100))
+                                frame)))
 
-  ;; Directory where desktop files are saved
-  (setq desktop-dirname "~/.emacs.d/desktop/")
-  (setq desktop-path (list desktop-dirname))
+    ;; Directory where desktop files are saved
+    (setq desktop-dirname "~/.emacs.d/desktop/")
+    (setq desktop-path (list desktop-dirname))
 
-  ;; Create directory if it doesn't exist
-  (unless (file-directory-p desktop-dirname)
-    (make-directory desktop-dirname t))
+    ;; Create directory if it doesn't exist
+    (unless (file-directory-p desktop-dirname)
+      (make-directory desktop-dirname t))
 
-  ;; Load first 10 buffers immediately, rest lazily
-  (setq desktop-restore-eager 10)
+    ;; Load first 10 buffers immediately, rest lazily
+    (setq desktop-restore-eager 5)
+    (setq desktop-lazy-verbose nil)
 
-  ;; Save desktop periodically
-  (setq desktop-auto-save-timeout 300)  ; 5 minutes
+    ;; Exclude problematic modes from desktop save
+    (setq desktop-modes-not-to-save
+        '(dired-mode doc-view-mode info-mode fundamental-mode))
 
-  ;; Don't ask about restoring desktop
-  (setq desktop-restore-in-current-display t)
-  (setq desktop-load-locked-desktop t)
+    ;; Don't save certain buffers
+    (setq desktop-buffers-not-to-save
+        "\\(^nn\\.a[0-9]+\\|\\.log\\|\\*.*\\*\\)")
+  
+    ;; Save desktop periodically
+    (setq desktop-auto-save-timeout 300)  ; 5 minutes
+
+    ;; Don't ask about restoring desktop
+    (setq desktop-restore-in-current-display t)
+    (setq desktop-load-locked-desktop t)
 #+end_src
 
 ** Recent Files
@@ -109,6 +125,13 @@ Enable session persistence to restore buffers and window configurations.
 
 #+end_src
 
+* Terminal
+** Vterm
+#+begin_src emacs-lisp
+    ;; Install Vterm
+    (use-package vterm
+      :straight t)
+#+end_src
 * UI Enhancements
 ** Which-Key
 Display available keybindings in a popup.
@@ -124,25 +147,31 @@ Display available keybindings in a popup.
 
 ** Theme Configuration
 #+begin_src emacs-lisp
-  (use-package doom-themes
+  (use-package ef-themes
   :straight t
-  :custom
-  ;; Global settings (defaults)
-  (doom-themes-enable-bold t)   ; if nil, bold is universally disabled
-  (doom-themes-enable-italic t) ; if nil, italics is universally disabled
-  ;; for treemacs users
-  (doom-themes-treemacs-theme "doom-tokyo-night") ; use "doom-colors" for less minimal icon theme
+  :init
+  ;; This makes the Modus commands listed below consider only the Ef
+  ;; themes.  For an alternative that includes Modus and all
+  ;; derivative themes (like Ef), enable the
+  ;; `modus-themes-include-derivatives-mode' instead.  The manual of
+  ;; the Ef themes has a section that explains all the possibilities:
+  ;;
+  ;; - Evaluate `(info "(ef-themes) Working with other Modus themes or taking over Modus")'
+  ;; - Visit <https://protesilaos.com/emacs/ef-themes#h:6585235a-5219-4f78-9dd5-6a64d87d1b6e>
+  (ef-themes-take-over-modus-themes-mode 1) 
+  :bind
+  (("<f5>" . modus-themes-rotate)
+   ("C-<f5>" . modus-themes-select)
+   ("M-<f5>" . modus-themes-load-random))
   :config
-  (load-theme 'doom-tokyo-night t)
+  ;; All customisations here.
+  (setq modus-themes-mixed-fonts t)
+  (setq modus-themes-italic-constructs t)
 
-  ;; Enable flashing mode-line on errors
-  (doom-themes-visual-bell-config)
-  ;; Enable custom neotree theme (nerd-icons must be installed!)
-  (doom-themes-neotree-config)
-  ;; or for treemacs users
-  (doom-themes-treemacs-config)
-  ;; Corrects (and improves) org-mode's native fontification.
-  (doom-themes-org-config))
+  ;; Finally, load your theme of choice (or a random one with
+  ;; `modus-themes-load-random', `modus-themes-load-random-dark',
+  ;; `modus-themes-load-random-light').
+  (modus-themes-load-theme 'ef-night))
 #+end_src
 
 ** Nerd Icons
@@ -178,7 +207,7 @@ Display available keybindings in a popup.
                 my-modeline-evil-state))
 
 (defface my-modeline-background
-  '((t :background "#3355bb" :foreground "white" :inherit bold))
+  '((t :background "#B33500" :foreground "white" :inherit bold))
   "Face with a background for use on the mode line.")
 
 (defun my-modeline-buffer-name ()
@@ -247,47 +276,6 @@ Display available keybindings in a popup.
 (put 'my-modeline-evil-state 'risky-local-variable t)
 #+end_src
 
-** Appearance Settings
-#+begin_src emacs-lisp
-;;; ----- Appearance -----
-
-(defun dw/set-terminal-title (title)
-  (send-string-to-terminal (format "\e]0;%s\a" title)))
-
-(defun dw/clear-background-color (&optional frame)
-  (interactive)
-  (or frame (setq frame (selected-frame)))
-  "unsets the background color in terminal mode"
-  (unless (display-graphic-p frame)
-    (send-string-to-terminal
-     (format "\033]11;[90]%s\033\\"
-         (face-attribute 'default :background)))
-    (set-face-background 'default "unspecified-bg" frame)))
-
-;; Clear background for transparent terminals
-(unless (display-graphic-p)
-  (add-hook 'after-make-frame-functions 'dw/clear-background-color)
-  (add-hook 'window-setup-hook 'dw/clear-background-color))
-
-;; GUI-specific settings
-(when (display-graphic-p)
-  (set-face-attribute 'default nil
-                      :font "jetbrainsmono nerd font"
-                      :weight 'normal
-                      :height 200)
-  (set-face-attribute 'fixed-pitch nil
-                      :font "jetbrainsmono nerd font"
-                      :weight 'normal
-                      :height 200)
-  (set-face-attribute 'variable-pitch nil
-                      :font "jetbrainsmono nerd font"
-                      :height 200
-                      :weight 'normal))
-
-;; Window separator
-(set-display-table-slot standard-display-table 'vertical-border (make-glyph-code ? ))
-#+end_src
-
 * AI Integration
 ** Gptel Configuration
 #+begin_src emacs-lisp
@@ -324,6 +312,34 @@ Display available keybindings in a popup.
   (evil-define-key 'normal 'global (kbd "<leader>an") 'gptel))
 #+end_src
 
+* Tool Integration
+** Music Player
+#+begin_src emacs-lisp
+  (use-package ready-player
+  :straight t
+  :config
+  (ready-player-mode +1))
+#+end_src
+** ePub Reader
+#+begin_src emacs-lisp
+  ;; Read ePub files
+  (use-package nov
+    :straight t
+    :init
+    (add-to-list 'auto-mode-alist '("\\.epub\\'" . nov-mode)))
+  (add-hook 'nov-mode-hook (lambda () (display-line-numbers-mode -1)))
+#+end_src
+** Empv Media Player
+#+begin_src emacs-lisp
+      (use-package empv
+      :straight (:host github :repo "isamert/empv.el")
+      :config
+        (setq empv-invidious-instance "https://inv.perditum.com/api/v1")
+      (add-to-list 'empv-mpv-args "--ytdl-format=bestvideo+bestaudio/best[ext=mp4]/best")
+        (setq empv-youtube-use-tabulated-results 1)
+        (setq empv-toggle-video 1))
+      
+#+end_src
 * Completion Framework
 ** Vertico
 Vertical completion interface.
@@ -396,131 +412,219 @@ Enhanced completion commands.
 ** Company Mode
 Auto-completion framework.
 #+begin_src emacs-lisp
-(use-package company
-  :straight t
-  :defer 0.2
-  :hook (prog-mode . company-mode)
-  :config
-  (setq company-minimum-prefix-length 1
-        company-idle-delay 0.1
-        company-selection-wrap-around t
-        company-tooltip-align-annotations t
-        company-show-numbers t
-        company-backends '((company-capf company-files))
-        company-global-modes '(not erc-mode message-mode help-mode))
-  
-  ;; Evil-friendly company navigation
-  (with-eval-after-load 'evil
-    (define-key company-active-map (kbd "C-n") 'company-select-next)
-    (define-key company-active-map (kbd "C-p") 'company-select-previous)
-    (define-key company-active-map (kbd "C-l") 'company-complete-selection)
-    (define-key company-active-map (kbd "<tab>") 'company-complete-common-or-cycle)
-    (define-key company-active-map (kbd "C-h") 'company-show-doc-buffer)))
+  (use-package company
+    :straight t
+    :defer 0.2
+    :hook (prog-mode . company-mode)
+    :config
+    (setq company-minimum-prefix-length 1
+          company-idle-delay 0.1
+          company-selection-wrap-around t
+          company-tooltip-align-annotations t
+          company-show-numbers t
+          company-backends '((company-capf company-files))
+          company-global-modes '(not erc-mode message-mode help-mode))
+    
+    ;; Evil-friendly company navigation
+    (with-eval-after-load 'evil
+      (define-key company-active-map (kbd "C-n") 'company-select-next)
+      (define-key company-active-map (kbd "C-p") 'company-select-previous)
+      (define-key company-active-map (kbd "C-l") 'company-complete-selection)
+      (define-key company-active-map (kbd "<tab>") 'company-complete-common-or-cycle)
+      (define-key company-active-map (kbd "C-h") 'company-show-doc-buffer)))
 
-(use-package company-box
+  (use-package company-box
+    :straight t
+    :defer t
+    :hook (company-mode . company-box-mode))
+
+  ;; Company-quickhelp for better documentation
+  (use-package company-quickhelp
   :straight t
-  :defer t
-  :hook (company-mode . company-box-mode))
+  :after company
+  :config
+  (company-quickhelp-mode 1)
+  (setq company-quickhelp-delay 0.5))
 #+end_src
 
+** Embark
+#+begin_src emacs-lisp
+    (use-package embark
+    :straight t
+
+    :bind
+    (("C-." . embark-act)         ;; pick some comfortable binding
+     ("C-;" . embark-dwim)        ;; good alternative: M-.
+     ("C-h B" . embark-bindings)) ;; alternative for `describe-bindings'
+
+    :init
+
+    ;; Optionally replace the key help with a completing-read interface
+    (setq prefix-help-command #'embark-prefix-help-command)
+
+    ;; Show the Embark target at point via Eldoc. You may adjust the
+    ;; Eldoc strategy, if you want to see the documentation from
+    ;; multiple providers. Beware that using this can be a little
+    ;; jarring since the message shown in the minibuffer can be more
+    ;; than one line, causing the modeline to move up and down:
+
+    ;; (add-hook 'eldoc-documentation-functions #'embark-eldoc-first-target)
+    ;; (setq eldoc-documentation-strategy #'eldoc-documentation-compose-eagerly)
+
+    ;; Add Embark to the mouse context menu. Also enable `context-menu-mode'.
+    ;; (context-menu-mode 1)
+    ;; (add-hook 'context-menu-functions #'embark-context-menu 100)
+
+    :config
+
+    ;; Hide the mode line of the Embark live/completions buffers
+    (add-to-list 'display-buffer-alist
+                 '("\\`\\*Embark Collect \\(Live\\|Completions\\)\\*"
+                   nil
+                   (window-parameters (mode-line-format . none)))))
+
+  ;; Consult users will also want the embark-consult package.
+  (use-package embark-consult
+    :straight t ; only need to install it, embark loads it after consult if found
+    :hook
+    (embark-collect-mode . consult-preview-at-point-mode))
+
+  (with-eval-after-load 'embark (empv-embark-initialize-extra-actions))
+#+end_src
 * Evil Mode
 ** Evil Core
 Vim emulation layer.
 #+begin_src emacs-lisp
-;;; Evil-Mode - load early since it's core to workflow
-(use-package evil
-  :straight t
-  :init
-  (setq evil-want-keybinding nil)
-  (setq evil-want-integration t)
-  (setq evil-want-minibuffer t)
-  (setq evil-undo-system 'undo-redo)
-  :config
-  (evil-mode 1)
-  (define-key evil-insert-state-map (kbd "C-n") nil)
-  (define-key evil-insert-state-map (kbd "C-p") nil)
-  (define-key evil-insert-state-map (kbd "C-j") nil)
-  (define-key evil-insert-state-map (kbd "C-k") nil)
-  (add-hook 'minibuffer-setup-hook 'evil-insert-state)
-  (evil-set-leader 'normal (kbd "SPC"))
-  (evil-set-leader 'visual (kbd "SPC"))
+      ;;; Evil-Mode - load early since it's core to workflow
+      (use-package evil
+        :straight t
+        :init
+        (setq evil-want-keybinding nil)
+        (setq evil-want-integration t)
+        (setq evil-want-minibuffer t)
+        (setq evil-undo-system 'undo-redo)
+        :config
+        (evil-mode 1)
+        (define-key evil-insert-state-map (kbd "C-n") nil)
+        (define-key evil-insert-state-map (kbd "C-p") nil)
+        (define-key evil-insert-state-map (kbd "C-j") nil)
+        (define-key evil-insert-state-map (kbd "C-k") nil)
+        (add-hook 'minibuffer-setup-hook 'evil-insert-state)
+        (evil-set-leader 'normal (kbd "SPC"))
+        (evil-set-leader 'visual (kbd "SPC"))
 
-  ;; Force normal state in special buffers
-  (evil-set-initial-state 'debugger-mode 'normal)
-  (evil-set-initial-state 'dired-mode 'normal)
-  (evil-set-initial-state 'compilation-mode 'normal)
-  (evil-set-initial-state 'help-mode 'normal)
-  (evil-set-initial-state 'Info-mode 'normal)
-  (evil-set-initial-state 'package-menu-mode 'motion)
+        ;; Force normal state in special buffers
+        (evil-set-initial-state 'debugger-mode 'normal)
+        (evil-set-initial-state 'ibuffer-mode 'normal)
+        (evil-set-initial-state 'dired-mode 'insert)
+        (evil-set-initial-state 'compilation-mode 'normal)
+        (evil-set-initial-state 'help-mode 'normal)
+        (evil-set-initial-state 'Info-mode 'normal)
+        (evil-set-initial-state 'package-menu-mode 'motion)
 
-  ;; Transient buffers should use Emacs state (for gptel-menu, magit, etc.)
-  (evil-set-initial-state 'transient-base-mode 'emacs)
+        ;; Transient buffers should use Emacs state (for gptel-menu, magit, etc.)
+        (evil-set-initial-state 'transient-base-mode 'emacs)
 
-  ;; Optional: Start in insert state when entering minibuffer
-  (add-hook 'minibuffer-setup-hook
-            (lambda ()
-              (when (bound-and-true-p evil-mode)
-                (evil-insert-state))))
+        ;; Optional: Start in insert state when entering minibuffer
+        (add-hook 'minibuffer-setup-hook
+                  (lambda ()
+                    (when (bound-and-true-p evil-mode)
+                      (evil-insert-state))))
 
-  ;; Custom functions for home directory search
-  (defun my/consult-fd-home ()
-    "Run consult-fd from home directory."
-    (interactive)
-    (let ((default-directory "/home/tudu/"))
-      (consult-fd)))
-  
-  (defun my/consult-ripgrep-home ()
-    "Run consult-ripgrep from home directory."
-    (interactive)
-    (let ((default-directory "/home/tudu/"))
-      (consult-ripgrep)))
-  
-  ;;; KEYBINDINGS
-  
-  ;; Dired keybindings
-  (evil-define-key 'normal 'global (kbd "<leader>d") 'dired-jump)
-  (evil-define-key 'normal 'global (kbd "<leader>D") 'dired)
-  
-  ;; File finding
-  (evil-define-key 'normal 'global (kbd "<leader>fh") 'my/consult-fd-home)
-  (evil-define-key 'normal 'global (kbd "<leader>fc") 'consult-fd)
-  
-  ;; Grep/Search
-  (evil-define-key 'normal 'global (kbd "<leader>gh") 'my/consult-ripgrep-home)
-  (evil-define-key 'normal 'global (kbd "<leader>gc") 'consult-ripgrep)
-  (evil-define-key 'normal 'global (kbd "<leader>ss") 'consult-line)
-  
-  ;; Recent files
-  (evil-define-key 'normal 'global (kbd "<leader>fr") 'consult-recent-file)
-  
-  ;; Buffers
-  (evil-define-key 'normal 'global (kbd "<leader>bl") 'consult-buffer)
-  (evil-define-key 'normal 'global (kbd "<leader>bp") 'previous-buffer)
-  (evil-define-key 'normal 'global (kbd "<leader>bn") 'next-buffer)
-  (evil-define-key 'normal 'global (kbd "<leader>bd") 'kill-current-buffer)
-  (evil-define-key 'normal 'global (kbd "<leader>bD") 'kill-buffer)
-  (evil-define-key 'normal 'global (kbd "<leader>bm") 'ibuffer)
+        ;; Custom functions for home directory search
+        (defun my/consult-fd-home ()
+          "Run consult-fd from home directory."
+          (interactive)
+          (let ((default-directory "/home/tudu/"))
+            (consult-fd)))
+        
+        (defun my/consult-ripgrep-home ()
+          "Run consult-ripgrep from home directory."
+          (interactive)
+          (let ((default-directory "/home/tudu/"))
+            (consult-ripgrep)))
+        
+        ;;; KEYBINDINGS
+        
+        ;; Dired keybindings
+        (evil-define-key 'normal 'global (kbd "<leader>d") 'dired-jump)
+        (evil-define-key 'normal 'global (kbd "<leader>D") 'dired)
+        
+        ;; File finding
+        (evil-define-key 'normal 'global (kbd "<leader>fh") 'my/consult-fd-home)
+        (evil-define-key 'normal 'global (kbd "<leader>fc") 'consult-fd)
+        
+        ;; Grep/Search
+        (evil-define-key 'normal 'global (kbd "<leader>gh") 'my/consult-ripgrep-home)
+        (evil-define-key 'normal 'global (kbd "<leader>gc") 'consult-ripgrep)
+        (evil-define-key 'normal 'global (kbd "<leader>ss") 'consult-line)
+        
+        ;; Recent files
+        (evil-define-key 'normal 'global (kbd "<leader>fr") 'consult-recent-file)
+        
+        ;; Buffers
+        (evil-define-key 'normal 'global (kbd "<leader>bl") 'consult-buffer)
+        (evil-define-key 'normal 'global (kbd "<leader>bp") 'previous-buffer)
+        (evil-define-key 'normal 'global (kbd "<leader>bn") 'next-buffer)
+        (evil-define-key 'normal 'global (kbd "<leader>bd") 'kill-current-buffer)
+        (evil-define-key 'normal 'global (kbd "<leader>bD") 'kill-buffer)
+        (evil-define-key 'normal 'global (kbd "<leader>bm") 'ibuffer)
 
-  ;; Git
-  (evil-define-key 'normal 'global (kbd "<leader>gf") 'consult-git-grep)
-  
-  ;; Window navigation
-  (evil-define-key 'normal 'global (kbd "H") 'evil-window-left)
-  (evil-define-key 'normal 'global (kbd "J") 'evil-window-down)
-  (evil-define-key 'normal 'global (kbd "K") 'evil-window-up)
-  (evil-define-key 'normal 'global (kbd "L") 'evil-window-right)
- ;;Fix redo keybinding (override Emacs reverse search)
-  
-  ;; U for redo
-  (evil-define-key 'normal 'global (kbd "U") 'undo-redo))
+        ;; Git
+        (evil-define-key 'normal 'global (kbd "<leader>gf") 'consult-git-grep)
+        
+        ;; Window navigation
+        (evil-define-key 'normal 'global (kbd "H") 'evil-window-left)
+        (evil-define-key 'normal 'global (kbd "J") 'evil-window-down)
+        (evil-define-key 'normal 'global (kbd "K") 'evil-window-up)
+        (evil-define-key 'normal 'global (kbd "L") 'evil-window-right)
 
-;; Window navigation in insert mode with C-u prefix
-(with-eval-after-load 'evil
-  ;; Insert mode window navigation with C-u prefix
-  (define-key evil-insert-state-map (kbd "C-u h") 'evil-window-left)
-  (define-key evil-insert-state-map (kbd "C-u j") 'evil-window-down)
-  (define-key evil-insert-state-map (kbd "C-u k") 'evil-window-up)
-  (define-key evil-insert-state-map (kbd "C-u l") 'evil-window-right))
+        ;; Youtube Keybindings
+        (evil-define-key 'normal 'global (kbd "<leader>ys") 'empv-youtube-search)
+        (evil-define-key 'normal 'global (kbd "<leader>yt") 'empv-toggle-youtube-tabulated-results)
+        (evil-define-key 'normal 'global (kbd "<leader>yv") 'empv-toggle-video)
+        (evil-define-key 'normal 'global (kbd "<leader>yh") 'empv-hydra/body)
+        (evil-define-key 'normal 'global (kbd "<leader>yp") 'empv-youtube-playlist)
+        (evil-define-key 'normal 'global (kbd "<leader>yc") 'empv-youtube-channel)
+
+        ;; Empv Keybindings
+        (evil-define-key 'normal 'global (kbd "<leader>vu") 'empv-play)
+        (evil-define-key 'normal 'global (kbd "<leader>vt") 'empv-toggle)
+        (evil-define-key 'normal 'global (kbd "<leader>vn") 'empv-playlist-next)
+        (evil-define-key 'normal 'global (kbd "<leader>vp") 'empv-playlist-prev)
+        (evil-define-key 'normal 'global (kbd "<leader>vc") 'empv-playlist-clear)
+        (evil-define-key 'normal 'global (kbd "<leader>vs") 'empv-playlist-select)
+        ;; Define hydra for video volume
+        (with-eval-after-load 'hydra
+          (defhydra hydra-volume (:color red :hint nil)
+        "
+          
+    ^Volume^        
+    ^^^^^^^^-------------------------
+    _=_: up      _q_: quit 
+    _-_: down    ^ ^
+    "
+    	;; Volume
+        ("=" empv-volume-up)
+    	("-" empv-volume-down)
+        ;; Other
+        ("q" nil :exit t)))
+        
+  ;; Bind to leader key
+  (with-eval-after-load 'evil
+    (evil-define-key 'normal 'global (kbd "<leader>n") 'hydra-volume/body))
+
+
+        ;; U for redo
+        (evil-define-key 'normal 'global (kbd "U") 'undo-redo))
+
+      ;; Window navigation in insert mode with C-u prefix
+      (with-eval-after-load 'evil
+        ;; Insert mode window navigation with C-u prefix
+        (define-key evil-insert-state-map (kbd "C-c h") 'evil-window-left)
+        (define-key evil-insert-state-map (kbd "C-c j") 'evil-window-down)
+        (define-key evil-insert-state-map (kbd "C-c k") 'evil-window-up)
+        (define-key evil-insert-state-map (kbd "C-c l") 'evil-window-right))
 #+end_src
 
 ** Evil Collection
@@ -757,6 +861,19 @@ Syntax checking.
          ("\\.markdown\\'" . markdown-mode)))
 #+end_src
 
+*** Tree-sitter
+#+begin_src emacs-lisp
+  (when (treesit-available-p)
+  (setq treesit-language-source-alist
+        '((rust "https://github.com/tree-sitter/tree-sitter-rust")
+          (c "https://github.com/tree-sitter/tree-sitter-c")
+          (cpp "https://github.com/tree-sitter/tree-sitter-cpp")))
+  
+  ;; Auto-install grammars
+  (dolist (lang treesit-language-source-alist)
+    (unless (treesit-language-available-p (car lang))
+      (treesit-install-language-grammar (car lang)))))
+#+end_src
 ** Rainbow Delimiters
 #+begin_src emacs-lisp
 (use-package rainbow-delimiters
@@ -770,20 +887,25 @@ Syntax checking.
 * File Management
 ** Dired
 #+begin_src emacs-lisp
-(use-package dired
-  :ensure nil
-  :defer t
-  :config
-  (setq dired-listing-switches "-alh --group-directories-first"
-        dired-dwim-target t
+      (use-package dired
+        :ensure nil
+        :defer t
+        :config
+        (setq dired-listing-switches "-alh --group-directories-first"
+              dired-dwim-target t
 
-        ; Clean up old dired buffers
-        dired-kill-when-opening-new-dired-buffer t 
-        dired-recursive-copies 'always
-        dired-recursive-deletes 'always)
-  
-       ;; Auto-refresh dired when files change
-       (add-hook 'dired-mode-hook 'auto-revert-mode))
+              ; Clean up old dired buffers
+              dired-kill-when-opening-new-dired-buffer t 
+              dired-recursive-copies 'always
+              dired-recursive-deletes 'always)
+    	  ;; Automatically hide the detailed listing when visiting a Dired
+    	  ;; buffer.  This can always be toggled on/off by calling the
+    	  ;; `dired-hide-details-mode' interactively with M-x or its keybindings
+    	  ;; (the left parenthesis by default).
+    	  (add-hook 'dired-mode-hook #'dired-hide-details-mode)
+        
+              ;; Auto-refresh dired when files change
+              (add-hook 'dired-mode-hook 'auto-revert-mode))
 #+end_src
 
 ** Ibuffer
