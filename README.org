@@ -1,0 +1,223 @@
+#+TITLE: Emacs Configuration Keybindings Reference
+#+AUTHOR: Phatu Tudu
+#+STARTUP: overview
+
+* Leader Key
+The leader key is set to ~SPC~ (Space) in both normal and visual modes.
+
+* File Operations
+| Keybinding      | Command                  | Description                           |
+|-----------------+--------------------------+---------------------------------------|
+| ~SPC f h~       | ~my/consult-fd-home~     | Find files in home directory          |
+| ~SPC f c~       | ~consult-fd~             | Find files in current directory       |
+| ~SPC f r~       | ~consult-recent-file~    | Open recent files                     |
+
+* Directory Management (Dired)
+| Keybinding      | Command                  | Description                           |
+|-----------------+--------------------------+---------------------------------------|
+| ~SPC d~         | ~dired-jump~             | Open dired in current directory       |
+| ~SPC D~         | ~dired~                  | Open dired with directory prompt      |
+
+* Buffer Management
+| Keybinding      | Command                  | Description                           |
+|-----------------+--------------------------+---------------------------------------|
+| ~SPC b l~       | ~consult-buffer~         | List and switch buffers               |
+| ~SPC b p~       | ~previous-buffer~        | Switch to previous buffer             |
+| ~SPC b n~       | ~next-buffer~            | Switch to next buffer                 |
+| ~SPC b d~       | ~kill-current-buffer~    | Kill current buffer                   |
+| ~SPC b D~       | ~kill-buffer~            | Kill buffer with prompt               |
+| ~SPC b m~       | ~ibuffer~                | Open ibuffer menu                     |
+
+* Search and Grep
+| Keybinding      | Command                     | Description                        |
+|-----------------+-----------------------------+------------------------------------|
+| ~SPC g h~       | ~my/consult-ripgrep-home~   | Search in home directory           |
+| ~SPC g c~       | ~consult-ripgrep~           | Search in current directory        |
+| ~SPC s s~       | ~consult-line~              | Search in current buffer           |
+| ~SPC g f~       | ~consult-git-grep~          | Search in git repository           |
+
+* Window Navigation
+** Normal Mode
+| Keybinding      | Command                  | Description                           |
+|-----------------+--------------------------+---------------------------------------|
+| ~H~             | ~evil-window-left~       | Move to left window                   |
+| ~J~             | ~evil-window-down~       | Move to window below                  |
+| ~K~             | ~evil-window-up~         | Move to window above                  |
+| ~L~             | ~evil-window-right~      | Move to right window                  |
+
+** Insert Mode
+| Keybinding      | Command                  | Description                           |
+|-----------------+--------------------------+---------------------------------------|
+| ~C-c h~         | ~evil-window-left~       | Move to left window                   |
+| ~C-c j~         | ~evil-window-down~       | Move to window below                  |
+| ~C-c k~         | ~evil-window-up~         | Move to window above                  |
+| ~C-c l~         | ~evil-window-right~      | Move to right window                  |
+
+* Window Management Hydra
+| Keybinding      | Action                              |
+|-----------------+-------------------------------------|
+| ~SPC w~         | Open window management hydra        |
+| ~v~             | Split window vertically             |
+| ~h~             | Split window horizontally           |
+| ~=~             | Enlarge window                      |
+| ~-~             | Shrink window                       |
+| ~]~             | Widen window                        |
+| ~[~             | Narrow window                       |
+| ~r~             | Rotate windows                      |
+| ~l~             | Rotate layout                       |
+| ~j~             | Scroll down                         |
+| ~k~             | Scroll up                           |
+| ~d~             | Delete current window               |
+| ~x~             | Delete other windows                |
+| ~q~             | Quit hydra                          |
+
+* AI Integration (Gptel)
+| Keybinding      | Command                  | Description                           |
+|-----------------+--------------------------+---------------------------------------|
+| ~SPC a s~       | ~gptel-send~             | Send message to AI                    |
+| ~SPC a m~       | ~gptel-menu~             | Open gptel menu                       |
+| ~SPC a n~       | ~gptel~                  | Start new AI conversation             |
+
+* Media Player (Empv)
+** YouTube
+| Keybinding      | Command                              | Description                     |
+|-----------------+--------------------------------------+---------------------------------|
+| ~SPC y s~       | ~empv-youtube-search~                | Search YouTube                  |
+| ~SPC y t~       | ~empv-toggle-youtube-tabulated-results~ | Toggle tabulated results     |
+| ~SPC y v~       | ~empv-toggle-video~                  | Toggle video mode               |
+| ~SPC y h~       | ~empv-hydra/body~                    | Open empv hydra menu            |
+| ~SPC y p~       | ~empv-youtube-playlist~              | Open YouTube playlist           |
+| ~SPC y c~       | ~empv-youtube-channel~               | Open YouTube channel            |
+
+** Playback Control
+| Keybinding      | Command                  | Description                           |
+|-----------------+--------------------------+---------------------------------------|
+| ~SPC v u~       | ~empv-play~              | Play media URL                        |
+| ~SPC v t~       | ~empv-toggle~            | Toggle play/pause                     |
+| ~SPC v n~       | ~empv-playlist-next~     | Next track                            |
+| ~SPC v p~       | ~empv-playlist-prev~     | Previous track                        |
+| ~SPC v c~       | ~empv-playlist-clear~    | Clear playlist                        |
+| ~SPC v s~       | ~empv-playlist-select~   | Select playlist item                  |
+
+** Volume Control Hydra
+| Keybinding      | Action                              |
+|-----------------+-------------------------------------|
+| ~SPC n~         | Open volume control hydra           |
+| ~=~             | Volume up                           |
+| ~-~             | Volume down                         |
+| ~q~             | Quit hydra                          |
+
+* LSP Mode (Language Server Protocol)
+| Keybinding      | Command                          | Description                      |
+|-----------------+----------------------------------+----------------------------------|
+| ~SPC l d~       | ~lsp-find-definition~            | Go to definition                 |
+| ~SPC l r~       | ~lsp-find-references~            | Find references                  |
+| ~SPC l i~       | ~lsp-find-implementation~        | Find implementation              |
+| ~SPC l t~       | ~lsp-find-type-definition~       | Go to type definition            |
+| ~SPC l h~       | ~lsp-describe-thing-at-point~    | Show documentation               |
+| ~SPC l a~       | ~lsp-execute-code-action~        | Execute code action              |
+| ~SPC l R~       | ~lsp-rename~                     | Rename symbol                    |
+| ~SPC l f~       | ~lsp-format-buffer~              | Format buffer                    |
+| ~SPC l w~       | ~lsp-restart-workspace~          | Restart LSP workspace            |
+| ~SPC l q~       | ~lsp-workspace-shutdown~         | Shutdown LSP workspace           |
+
+* Flycheck (Syntax Checking)
+| Keybinding      | Command                  | Description                           |
+|-----------------+--------------------------+---------------------------------------|
+| ~SPC c n~       | ~flycheck-next-error~    | Go to next error                      |
+| ~SPC c p~       | ~flycheck-previous-error~ | Go to previous error                 |
+| ~SPC c l~       | ~flycheck-list-errors~   | List all errors                       |
+
+* Rust Development
+| Keybinding      | Command                  | Description                           |
+|-----------------+--------------------------+---------------------------------------|
+| ~SPC c r~       | ~cargo run~              | Run Rust project                      |
+| ~SPC c b~       | ~cargo build~            | Build Rust project                    |
+| ~SPC c t~       | ~cargo test~             | Run Rust tests                        |
+
+* Emacs Lisp Development
+| Keybinding      | Command                  | Description                           |
+|-----------------+--------------------------+---------------------------------------|
+| ~SPC e e~       | ~eval-last-sexp~         | Evaluate expression before cursor     |
+| ~SPC e b~       | ~eval-buffer~            | Evaluate entire buffer                |
+| ~SPC e f~       | ~eval-defun~             | Evaluate function definition          |
+| ~SPC e r~       | ~eval-region~            | Evaluate selected region              |
+
+* Help System
+| Keybinding      | Command                  | Description                           |
+|-----------------+--------------------------+---------------------------------------|
+| ~SPC h f~       | ~helpful-callable~       | Help for function                     |
+| ~SPC h v~       | ~helpful-variable~       | Help for variable                     |
+| ~SPC h k~       | ~helpful-key~            | Help for keybinding                   |
+| ~C-h f~         | ~helpful-callable~       | Help for function                     |
+| ~C-h v~         | ~helpful-variable~       | Help for variable                     |
+| ~C-h k~         | ~helpful-key~            | Help for keybinding                   |
+| ~C-h F~         | ~helpful-function~       | Help for function (detailed)          |
+| ~C-h C~         | ~helpful-command~        | Help for command                      |
+
+* Git (Magit)
+| Keybinding      | Command                  | Description                           |
+|-----------------+--------------------------+---------------------------------------|
+| ~SPC g g~       | ~magit-status~           | Open Magit status                     |
+| ~SPC g d~       | ~magit-diff-buffer-file~ | Show diff for current file            |
+| ~SPC g b~       | ~magit-blame~            | Show git blame                        |
+
+* Theme Management
+| Keybinding      | Command                  | Description                           |
+|-----------------+--------------------------+---------------------------------------|
+| ~F5~            | ~modus-themes-rotate~    | Rotate through themes                 |
+| ~C-F5~          | ~modus-themes-select~    | Select theme from list                |
+| ~M-F5~          | ~modus-themes-load-random~ | Load random theme                   |
+
+* Embark
+| Keybinding      | Command                  | Description                           |
+|-----------------+--------------------------+---------------------------------------|
+| ~C-.~           | ~embark-act~             | Act on thing at point                 |
+| ~C-;~           | ~embark-dwim~            | Do what I mean                        |
+| ~C-h B~         | ~embark-bindings~        | Show embark bindings                  |
+
+* Vertico (Completion)
+** Insert State (in minibuffer)
+| Keybinding      | Command                  | Description                           |
+|-----------------+--------------------------+---------------------------------------|
+| ~C-n~           | ~vertico-next~           | Next completion candidate             |
+| ~C-p~           | ~vertico-previous~       | Previous completion candidate         |
+| ~C-u~           | ~vertico-scroll-down~    | Scroll completions down               |
+| ~C-d~           | ~vertico-scroll-up~      | Scroll completions up                 |
+
+** Normal State (in minibuffer)
+| Keybinding      | Command                  | Description                           |
+|-----------------+--------------------------+---------------------------------------|
+| ~C-n~           | ~vertico-next~           | Next completion candidate             |
+| ~C-p~           | ~vertico-previous~       | Previous completion candidate         |
+| ~g g~           | ~vertico-first~          | First completion candidate            |
+| ~G~             | ~vertico-last~           | Last completion candidate             |
+| ~C-u~           | ~vertico-scroll-down~    | Scroll completions down               |
+| ~C-d~           | ~vertico-scroll-up~      | Scroll completions up                 |
+
+* Company (Auto-completion)
+| Keybinding      | Command                       | Description                      |
+|-----------------+-------------------------------+----------------------------------|
+| ~C-n~           | ~company-select-next~         | Next completion                  |
+| ~C-p~           | ~company-select-previous~     | Previous completion              |
+| ~C-l~           | ~company-complete-selection~  | Accept completion                |
+| ~TAB~           | ~company-complete-common-or-cycle~ | Complete or cycle           |
+| ~C-h~           | ~company-show-doc-buffer~     | Show documentation               |
+
+* Evil Mode Basics
+| Keybinding      | Command                  | Description                           |
+|-----------------+--------------------------+---------------------------------------|
+| ~U~             | ~undo-redo~              | Redo                                  |
+| ~j k~           | ~evil-escape~            | Exit insert mode (alternative to ESC) |
+
+* System
+| Keybinding      | Command                  | Description                           |
+|-----------------+--------------------------+---------------------------------------|
+| ~SPC r r~       | ~load-file user-init-file~ | Reload Emacs configuration          |
+
+* Notes
+- The leader key (~SPC~) works in both normal and visual modes
+- ~jk~ is configured as an alternative to ~ESC~ for exiting insert mode (via evil-escape)
+- In insert mode, you can use ~C-c~ followed by ~h/j/k/l~ for window navigation
+- Many hydras allow repeated keypresses without re-entering the hydra
+- Dired starts in insert state by default for easier file navigation
