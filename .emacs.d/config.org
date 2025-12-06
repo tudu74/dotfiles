@@ -10,23 +10,30 @@ Use =M-x org-babel-tangle= to generate the init.el file.
 * Early Setup
 ** Basic UI Settings
 #+begin_src emacs-lisp
-  ;;; init.el --- Optimized Emacs Configuration -*- lexical-binding: t -*-
+    ;;; init.el --- Optimized Emacs Configuration -*- lexical-binding: t -*-
 
-  ;; Basic UI settings (moved from early-init if needed)
-  (global-display-line-numbers-mode 1)
-  (setq display-line-numbers-type 'relative)
-  (add-to-list 'default-frame-alist '(font . "jetbrainsmono nerd font-16"))
-  ;; This is for the Tab to work in terminal for org-mode
-  (setq evil-want-C-i-jump nil)
+    ;; Basic UI settings (moved from early-init if needed)
+    ;; (global-display-line-numbers-mode 1)
+    ;;Enable line numbers ONLY in programming modes (e.g., C, Python, Lisp)
+    (add-hook 'prog-mode-hook 'display-line-numbers-mode)
+    (setq display-line-numbers-type 'relative)
+    (add-to-list 'default-frame-alist '(font . "jetbrainsmono nerd font-14"))
+    (global-visual-line-mode 1)
+    ;; This is for the Tab to work in terminal for org-mode
+    (setq evil-want-C-i-jump nil)
 
-  ;; FIX: Ensure the core 'seq' library is loaded globally to resolve
-  ;; FIX: dependency errors like 'seq-empty-p' missing.
-  (require 'seq)
+    ;; FIX: Ensure the core 'seq' library is loaded globally to resolve
+    ;; FIX: dependency errors like 'seq-empty-p' missing.
+    (require 'seq)
 
-  ;; Smooth Scrolling
-  (setq scroll-margin 0
-      scroll-conservatively 100000
-      scroll-preserve-screen-position 'always)
+    ;; Smooth Scrolling
+    (setq scroll-margin 0
+        scroll-conservatively 100000
+        scroll-preserve-screen-position 'always)
+    ;; Use UTF-8 for all character encoding
+    (set-language-environment "UTF-8")
+    (prefer-coding-system 'utf-8)
+
 
 #+end_src
 
@@ -106,25 +113,32 @@ Display available keybindings in a popup.
 
 ** Theme Configuration
 #+begin_src emacs-lisp
-  (use-package doom-themes
+(use-package doric-themes
   :straight t
-  :custom
-  ;; Global settings (defaults)
-  (doom-themes-enable-bold t)   ; if nil, bold is universally disabled
-  (doom-themes-enable-italic t) ; if nil, italics is universally disabled
-  ;; for treemacs users
-  (doom-themes-treemacs-theme "doom-atom") ; use "doom-colors" for less minimal icon theme
+  :demand t
   :config
-  (load-theme 'doom-dracula t)
+  ;; These are the default values.
+  (setq doric-themes-to-toggle '(doric-light doric-dark))
+  (setq doric-themes-to-rotate doric-themes-collection)
 
-  ;; Enable flashing mode-line on errors
-  (doom-themes-visual-bell-config)
-  ;; Enable custom neotree theme (nerd-icons must be installed!)
-  (doom-themes-neotree-config)
-  ;; or for treemacs users
-  (doom-themes-treemacs-config)
-  ;; Corrects (and improves) org-mode's native fontification.
-  (doom-themes-org-config))
+  (doric-themes-select 'doric-dark)
+
+  ;; ;; To load a random theme instead, use something like one of these:
+  ;;
+  ;; (doric-themes-load-random)
+  ;; (doric-themes-load-random 'light)
+  ;; (doric-themes-load-random 'dark)
+
+  ;; ;; For optimal results, also define your preferred font family (or use my `fontaine' package):
+  ;;
+  ;; (set-face-attribute 'default nil :family "Aporetic Sans Mono" :height 160)
+  ;; (set-face-attribute 'variable-pitch nil :family "Aporetic Sans" :height 1.0)
+  ;; (set-face-attribute 'fixed-pitch nil :family "Aporetic Sans Mono" :height 1.0)
+
+  :bind
+  (("<f5>" . doric-themes-toggle)
+   ("C-<f5>" . doric-themes-select)
+   ("M-<f5>" . doric-themes-rotate)))
 #+end_src
 
 ** Nerd Icons
@@ -146,6 +160,7 @@ Display available keybindings in a popup.
   (use-package spacious-padding
     :straight t
     :defer t)
+  (spacious-padding-mode 1)
 #+end_src
 
 ** Custom Mode Line
@@ -160,7 +175,7 @@ Display available keybindings in a popup.
                   my-modeline-evil-state))
 
   (defface my-modeline-background
-    '((t :background "#B33500" :foreground "white" :inherit bold))
+    '((t :background "#012255" :foreground "white" :inherit bold))
     "Face with a background for use on the mode line.")
 
   (defun my-modeline-buffer-name ()
@@ -229,6 +244,42 @@ Display available keybindings in a popup.
   (put 'my-modeline-evil-state 'risky-local-variable t)
 #+end_src
 
+** Dashboard
+#+begin_src emacs-lisp
+  ;; Install dashboard
+  (use-package dashboard
+    :straight t
+    :config
+    (setq dashboard-enable-image-banner t)
+    (setq dashboard-startupify-list '(
+                                     dashboard-insert-newline
+                                     dashboard-insert-newline
+                                     dashboard-insert-newline
+  				   dashboard-insert-banner
+                                     dashboard-insert-newline
+                                     dashboard-insert-newline
+                                     dashboard-insert-banner-title
+                                     dashboard-insert-newline
+                                     dashboard-insert-newline
+                                     dashboard-insert-navigator
+                                     dashboard-insert-newline
+                                     dashboard-insert-newline
+                                     dashboard-insert-init-info
+                                     dashboard-insert-newline
+                                     dashboard-insert-newline
+                                     dashboard-insert-items
+                                     dashboard-insert-newline
+                                     dashboard-insert-newline
+                                     dashboard-insert-footer))
+    (setq dashboard-items '((recents . 5)))
+    (setq dashboard-center-content t)
+    (setq dashboard-vertically-center-content t)
+    (setq dashboard-startup-banner (cons "/home/tudu/Pictures/svg/anime-girl.png" "/home/tudu/Pictures/ascii-art/emacs.txt"))
+   ;; ⭐ Resize the PNG banner
+    (setq dashboard-image-banner-max-height 200)  ;; change until it looks right
+    (setq dashboard-image-banner-max-width 400)
+    (dashboard-setup-startup-hook)) 
+#+end_src
 * AI Integration
 ** Gptel Configuration
 #+begin_src emacs-lisp
@@ -287,14 +338,29 @@ Display available keybindings in a popup.
   (use-package empv
   :straight (:host github :repo "isamert/empv.el")
   :custom
+    ;; Use the same socket as qutebrowser
+    (empv-socket-file "/tmp/mpvsocket")
+    
     (empv-mpv-args 
      `("--no-terminal" 
        "--idle"
-       ,(concat "--input-ipc-server=" (expand-file-name "empv-socket" temporary-file-directory))
+       ,(concat "--input-ipc-server=" empv-socket-file)
        "--ytdl-format=bestvideo[ext=mp4][height<=1080]+bestaudio[ext=m4a]/best[ext=mp4][height<=1080]/best"))
   :config
     (setq empv-invidious-instance "https://inv.perditum.com/api/v1")
     (setq empv-youtube-use-tabulated-results 1)
+    
+    ;; Auto-start MPV if socket doesn't exist
+    (defun my/empv-ensure-mpv-running (&rest _args)
+      "Start MPV if it's not already running."
+      (unless (file-exists-p empv-socket-file)
+        (start-process "mpv" nil "mpv" 
+                       (concat "--input-ipc-server=" empv-socket-file)
+                       "--idle=yes"
+                       "--no-terminal")))
+    
+    ;; Hook to ensure MPV is running before empv commands
+    (advice-add 'empv--send-command :before #'my/empv-ensure-mpv-running)
     
     ;; Initialize embark integration
     (with-eval-after-load 'embark 
@@ -523,7 +589,7 @@ Vim emulation layer.
         (evil-define-key 'normal 'global (kbd "<leader>fr") 'consult-recent-file)
         
         ;; Buffers
-        (evil-define-key 'normal 'global (kbd "<leader>bl") 'consult-buffer)
+        (evil-define-key 'normal 'global (kbd "<leader>bs") 'consult-buffer)
         (evil-define-key 'normal 'global (kbd "<leader>bp") 'previous-buffer)
         (evil-define-key 'normal 'global (kbd "<leader>bn") 'next-buffer)
         (evil-define-key 'normal 'global (kbd "<leader>bd") 'kill-current-buffer)

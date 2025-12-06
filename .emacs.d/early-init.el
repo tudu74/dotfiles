@@ -27,6 +27,9 @@
 (setq inhibit-startup-echo-area-message user-login-name)
 (setq initial-scratch-message "")
 
+;; Avoid multiple versions of the same packages being loaded
+(setq package-enable-at-startup nil)
+
 ;; Set default frame parameters to prevent white flash
 (setq default-frame-alist
       '(
@@ -35,7 +38,7 @@
         (menu-bar-lines . 0)
         (tool-bar-lines . 0)
         (vertical-scroll-bars . nil)
-        (alpha-background . 93)
+        (alpha-background . 100)
         (fullscreen . maximized)))
 
 ;; Disable package.el in favor of straight.el
